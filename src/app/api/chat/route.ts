@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 
 // API Configuration - stored securely on backend
 // TODO: ADD API KEY BELOW
-const API_KEY = '0786f8dee1fa469fb9xxxxxLB';
+const API_KEY = 'c2bdddd4445d4161b71db547d0da7479.T3KgaPHo7e1iBTKG';
 const BASE_URL = 'https://api.z.ai/api/paas/v4';
 
 interface ChatMessage {
