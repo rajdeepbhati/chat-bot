@@ -1,321 +1,249 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { ChatHistory } from '@/components/chat/ChatHistory';
-import { ChatInput } from '@/components/chat/ChatInput';
+import { FormEvent, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ShieldCheck, BookOpen, GraduationCap, Loader2, KeyRound, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Trash2, Download, MoreHorizontal, Sparkles, GitBranch, Calculator, Code, Lightbulb } from 'lucide-react';
-import type { Message } from '@/lib/types';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { AuthApiError, getRoleLandingPath, loginUser, type UserRole } from '@/lib/auth';
 
-// Example prompts for quick actions
-const EXAMPLE_PROMPTS = [
+const roleOptions: Array<{
+  value: UserRole;
+  label: string;
+  description: string;
+  icon: typeof GraduationCap;
+}> = [
   {
-    id: 'mermaid',
-    icon: GitBranch,
-    title: 'Generate a Flowchart',
-    prompt: 'Create a Mermaid flowchart showing the software development lifecycle with phases: Requirements, Design, Development, Testing, Deployment, and Maintenance. Show the flow between these phases.',
-    gradient: 'from-purple-500 to-pink-500',
+    value: 'student',
+    label: 'Student',
+    description: 'Access timetable, attendance, grades, and AI support.',
+    icon: GraduationCap,
   },
   {
-    id: 'math',
-    icon: Calculator,
-    title: 'Math Formulas',
-    prompt: 'Explain and show the quadratic formula, the Pythagorean theorem, and Euler\'s identity using LaTeX math notation. Include both inline and block math examples.',
-    gradient: 'from-blue-500 to-cyan-500',
+    value: 'faculty',
+    label: 'Faculty',
+    description: 'Manage classes, announcements, attendance, and reports.',
+    icon: BookOpen,
   },
   {
-    id: 'code',
-    icon: Code,
-    title: 'Code Example',
-    prompt: 'Write a Python function that implements the quicksort algorithm with detailed comments explaining each step. Include a usage example.',
-    gradient: 'from-emerald-500 to-teal-500',
-  },
-  {
-    id: 'knowledge',
-    icon: Lightbulb,
-    title: 'Fun Facts',
-    prompt: 'Tell me 5 mind-blowing facts about the universe that most people don\'t know. Make each fact interesting and educational.',
-    gradient: 'from-orange-500 to-amber-500',
+    value: 'admin',
+    label: 'Admin',
+    description: 'Control portal settings, user roles, and campus insights.',
+    icon: ShieldCheck,
   },
 ];
 
-// Generate unique ID
-const generateId = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
-
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('student');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Send message to API and handle response
-  const sendMessage = useCallback(async (userMessage: string) => {
-    // Add user message
-    const userMsg: Message = {
-      id: generateId(),
-      role: 'user',
-      content: userMessage,
-      timestamp: new Date(),
-    };
+  const activeRole = roleOptions.find((option) => option.value === selectedRole) ?? roleOptions[0];
+  const ActiveRoleIcon = activeRole.icon;
 
-    // Create assistant message placeholder
-    const assistantMsg: Message = {
-      id: generateId(),
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(),
-      isStreaming: true,
-    };
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrorMessage(null);
 
-    setMessages((prev) => [...prev, userMsg, assistantMsg]);
-    setIsLoading(true);
+    if (!email.trim() || !password.trim()) {
+      setErrorMessage('Email and password are required.');
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
-      // Prepare messages for API (only user and assistant messages)
-      const apiMessages = [...messages, userMsg]
-        .filter((m) => m.role === 'user' || m.role === 'assistant')
-        .map((m) => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.content,
-        }));
+      const result = await loginUser(email.trim(), password);
 
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ messages: apiMessages }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+      if (result.user.role !== selectedRole) {
+        setErrorMessage(
+          `This account is registered as ${result.user.role}. Please switch the role selection and try again.`
+        );
+        return;
       }
 
-      const data = await response.json();
-      const content = data.content || '';
+      localStorage.setItem('eduflow.access_token', result.access_token);
+      localStorage.setItem('eduflow.user', JSON.stringify(result.user));
 
-      // Update the assistant message with the response
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantMsg.id
-            ? { ...m, content, isStreaming: false }
-            : m
-        )
-      );
-    } catch (error) {
-      console.error('Chat error:', error);
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantMsg.id
-            ? { ...m, isStreaming: false, content: `Error: ${(error as Error).message}` }
-            : m
-        )
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [messages]);
-
-  // Stop generation (no-op for non-streaming)
-  const handleStop = useCallback(() => {
-    // Nothing to stop in non-streaming mode
-  }, []);
-
-  // Regenerate response
-  const handleRegenerate = useCallback(async (messageId: string) => {
-    // Find the message index
-    const messageIndex = messages.findIndex((m) => m.id === messageId);
-    if (messageIndex === -1 || messages[messageIndex].role !== 'assistant') return;
-
-    // Find the preceding user message
-    const userMessageIndex = messageIndex - 1;
-    if (userMessageIndex < 0 || messages[userMessageIndex].role !== 'user') return;
-
-    // Get messages up to and including the user message
-    const messagesToKeep = messages.slice(0, messageIndex);
-    const userMessage = messages[userMessageIndex];
-
-    setMessages(messagesToKeep);
-    setIsLoading(true);
-
-    try {
-      const apiMessages = messagesToKeep
-        .filter((m) => m.role === 'user' || m.role === 'assistant')
-        .map((m) => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.content,
-        }));
-
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ messages: apiMessages }),
+      toast({
+        title: 'Signed in successfully',
+        description: `Welcome back, ${result.user.full_name}.`,
       });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const content = data.content || '';
-
-      // Add assistant message with the response
-      const assistantMsg: Message = {
-        id: generateId(),
-        role: 'assistant',
-        content,
-        timestamp: new Date(),
-        isStreaming: false,
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
+      router.push(getRoleLandingPath(result.user.role));
     } catch (error) {
-      console.error('Regenerate error:', error);
+      const message =
+        error instanceof AuthApiError
+          ? error.message
+          : 'Something went wrong while contacting the server.';
+      setErrorMessage(message);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
-  }, [messages]);
-
-  // Clear chat
-  const handleClear = useCallback(() => {
-    if (messages.length > 0) {
-      setMessages([]);
-    }
-  }, [messages]);
-
-  // Export chat as Markdown
-  const handleExport = useCallback(() => {
-    const markdown = messages
-      .map((m) => {
-        const role = m.role === 'user' ? 'You' : 'Assistant';
-        return `## ${role}\n\n${m.content}\n\n---\n`;
-      })
-      .join('\n');
-
-    const blob = new Blob([markdown], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `chat-export-${new Date().toISOString().slice(0, 10)}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [messages]);
+  };
 
   return (
-    <div className="flex flex-col h-screen bg-zinc-900">
-      {/* Header */}
-      <header className="flex-shrink-0 border-b border-zinc-800 bg-zinc-900/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-900/60">
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <h1 className="text-lg font-semibold text-white">AI Chat</h1>
+    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(30,64,175,0.28),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(13,148,136,0.24),_transparent_30%),linear-gradient(135deg,_#07111f_0%,_#0d1729_45%,_#091423_100%)]">
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.06)_1px,transparent_1px)] bg-[size:72px_72px] opacity-30" />
+      <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-4 py-10 lg:flex-row lg:items-center lg:gap-12">
+        <section className="mb-10 max-w-2xl lg:mb-0 lg:flex-1">
+          <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-1.5 text-sm text-cyan-100 backdrop-blur">
+            <Sparkles className="h-4 w-4" />
+            EduFlow AI-Integrated Campus Portal
           </div>
+          <h1 className="mt-6 max-w-xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+            One secure sign-in for every campus workflow.
+          </h1>
+          <p className="mt-4 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">
+            Connect students, faculty, and administrators through a modern portal with role-based access,
+            AI assistance, and secure academic operations.
+          </p>
 
-          <div className="flex items-center gap-1">
-            {messages.length > 0 && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClear}
-                  className="text-zinc-400 hover:text-white"
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            {roleOptions.map((role) => {
+              const Icon = role.icon;
+              const isActive = role.value === selectedRole;
+
+              return (
+                <button
+                  key={role.value}
+                  type="button"
+                  onClick={() => {
+                    setSelectedRole(role.value);
+                    setErrorMessage(null);
+                  }}
+                  className={`rounded-2xl border p-4 text-left transition-all ${
+                    isActive
+                      ? 'border-cyan-300/40 bg-white/10 shadow-[0_0_0_1px_rgba(125,211,252,0.15)]'
+                      : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/[0.08]'
+                  }`}
                 >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Clear
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleExport}
-                  className="text-zinc-400 hover:text-white"
-                >
-                  <Download className="h-4 w-4 mr-1" />
-                  Export
-                </Button>
-              </>
-            )}
+                  <Icon className={`h-5 w-5 ${isActive ? 'text-cyan-200' : 'text-slate-300'}`} />
+                  <div className="mt-3 text-sm font-medium text-white">{role.label}</div>
+                  <p className="mt-1 text-xs leading-5 text-slate-400">{role.description}</p>
+                </button>
+              );
+            })}
           </div>
-        </div>
-      </header>
+        </section>
 
-      {/* Chat History or Welcome Screen */}
-      {messages.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto">
-          <div className="max-w-2xl w-full space-y-6">
-            {/* Welcome Message */}
-            <div className="text-center space-y-2">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-blue-600 mb-4">
-                <Sparkles className="w-8 h-8 text-white" />
+        <section className="w-full max-w-md lg:w-[28rem]">
+          <Card className="border-white/10 bg-white/[0.08] py-0 shadow-2xl shadow-cyan-950/30 backdrop-blur-xl">
+            <CardHeader className="border-b border-white/10 px-6 py-6">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-teal-500 text-slate-950 shadow-lg shadow-cyan-500/20">
+                <ActiveRoleIcon className="h-6 w-6" />
               </div>
-              <h2 className="text-2xl font-bold text-white">Welcome to AI Chat</h2>
-              <p className="text-zinc-400">
-                Ask anything or try one of these examples to see what I can do!
-              </p>
-            </div>
-
-            {/* Example Prompts Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
-              {EXAMPLE_PROMPTS.map((example) => {
-                const Icon = example.icon;
-                return (
-                  <button
-                    key={example.id}
-                    onClick={() => sendMessage(example.prompt)}
-                    disabled={isLoading}
-                    className="group flex items-start gap-3 p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50 hover:border-zinc-600 hover:bg-zinc-800 transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed"
+              <CardTitle className="text-2xl text-white">{activeRole.label} Login</CardTitle>
+              <CardDescription className="text-slate-300">
+                Enter your credentials to access your EduFlow workspace.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-6 py-6">
+              <form className="space-y-5" onSubmit={handleSubmit}>
+                <div className="space-y-2">
+                  <Label htmlFor="role" className="text-slate-200">Role</Label>
+                  <Select
+                    value={selectedRole}
+                    onValueChange={(value) => {
+                      setSelectedRole(value as UserRole);
+                      setErrorMessage(null);
+                    }}
                   >
-                    <div className={`flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br ${example.gradient} flex items-center justify-center`}>
-                      <Icon className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-white group-hover:text-emerald-400 transition-colors">
-                        {example.title}
-                      </h3>
-                      <p className="text-sm text-zinc-400 line-clamp-2 mt-0.5">
-                        {example.prompt.slice(0, 60)}...
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                    <SelectTrigger id="role" className="w-full border-white/10 bg-slate-950/40 text-white">
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roleOptions.map((role) => (
+                        <SelectItem key={role.value} value={role.value}>
+                          {role.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            {/* Features hint */}
-            <div className="text-center pt-4">
-              <p className="text-xs text-zinc-500">
-                ✨ Supports Markdown, LaTeX math, code highlighting & Mermaid diagrams
-              </p>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <ChatHistory
-          messages={messages}
-          onRegenerate={handleRegenerate}
-          className="flex-1"
-        />
-      )}
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-slate-200">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="you@campus.edu"
+                    autoComplete="email"
+                    className="h-11 border-white/10 bg-slate-950/40 text-white placeholder:text-slate-500"
+                  />
+                </div>
 
-      {/* Input Area */}
-      <div className="flex-shrink-0 border-t border-zinc-800 bg-zinc-900 p-4">
-        <div className="max-w-3xl mx-auto">
-          <ChatInput
-            onSend={sendMessage}
-            onStop={handleStop}
-            isLoading={isLoading}
-            placeholder="Send a message..."
-          />
-        </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password" className="text-slate-200">Password</Label>
+                    <span className="text-xs text-slate-400">JWT-secured session</span>
+                  </div>
+                  <div className="relative">
+                    <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      placeholder="Enter your password"
+                      autoComplete="current-password"
+                      className="h-11 border-white/10 bg-slate-950/40 pl-10 text-white placeholder:text-slate-500"
+                    />
+                  </div>
+                </div>
+
+                {errorMessage && (
+                  <div className="rounded-xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+                    {errorMessage}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="h-11 w-full rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 font-semibold text-slate-950 hover:from-cyan-300 hover:to-teal-300"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    'Sign in to EduFlow'
+                  )}
+                </Button>
+              </form>
+
+              <div className="mt-6 rounded-xl border border-white/10 bg-slate-950/30 p-4 text-sm text-slate-300">
+                <div className="font-medium text-white">Backend connection</div>
+                <p className="mt-1 leading-6">
+                  This page calls the FastAPI JWT endpoint at{' '}
+                  <span className="font-mono text-cyan-200">
+                    {process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000'}
+                  </span>
+                  .
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

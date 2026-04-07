@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { FloatingChatbot } from "@/components/chat/FloatingChatbot";
 import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
@@ -39,6 +40,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
         {children}
+        <FloatingChatbot />
         <Toaster />
       </body>
     </html>
