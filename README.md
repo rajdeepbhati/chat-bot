@@ -1,3 +1,68 @@
+# Smart Campus OS
+
+This repository now contains both:
+
+- the React/Next.js frontend in `src/`
+- the FastAPI backend in `backend/`
+
+So yes, the backend is implemented in the same project as the frontend.
+
+## Run Both Parts
+
+Frontend from the project root:
+
+```bash
+npm run frontend:dev
+```
+
+Backend from the project root:
+
+```bash
+npm run backend:dev
+```
+
+Frontend URL:
+
+```text
+http://localhost:3000
+```
+
+Backend URL:
+
+```text
+http://127.0.0.1:8000
+```
+
+Swagger docs:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+## Backend Setup
+
+Run this once:
+
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+```
+
+For MySQL, set `backend/.env` like:
+
+```env
+DATABASE_URL=mysql+pymysql://root:yourpassword@localhost:3306/eduflow
+```
+
+## Full System Guide
+
+See:
+
+`SMART_CAMPUS_OS_SETUP.md`
+
 # 🚀 Welcome to Z.ai Code Scaffold
 
 A modern, production-ready web application scaffold powered by cutting-edge technologies, designed to accelerate your development with [Z.ai](https://chat.z.ai)'s AI-powered coding assistance.

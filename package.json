@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
+    "frontend:dev": "next dev -p 3000 2>&1 | tee dev.log",
+    "backend:dev": "cd backend && python -m uvicorn app.main:app --reload",
+    "dev:all": "start \"fastapi\" cmd /c \"npm run backend:dev\" && npm run frontend:dev",
     "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
