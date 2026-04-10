@@ -1,9 +1,7 @@
 import { NextRequest } from 'next/server';
 
-// API Configuration - stored securely on backend
-// TODO: ADD API KEY BELOW
-const API_KEY = '2752b73ac3e245fc98d7fd9a257487b5.qAL0Me5p52kNKyC1';
-const BASE_URL = 'https://api.z.ai/api/paas/v4';
+const API_KEY = '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';
+const INVOKE_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -12,7 +10,7 @@ interface ChatMessage {
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages } = await request.json() as { messages: ChatMessage[] };
+    const { messages, stream = false } = await request.json() as { messages: ChatMessage[]; stream?: boolean };
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: 'Messages array is required' }), {
@@ -21,7 +19,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Prepend system message to the messages array
     const messagesWithSystem: ChatMessage[] = [
       {
         role: 'system',
@@ -30,19 +27,21 @@ export async function POST(request: NextRequest) {
       ...messages,
     ];
 
-    // Create non-streaming response
-    const response = await fetch(`${BASE_URL}/chat/completions`, {
+    const response = await fetch(INVOKE_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Accept-Language': 'en-US,en',
         'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json',
+        'Accept': stream ? 'text/event-stream' : 'application/json',
       },
       body: JSON.stringify({
-        model: 'glm-4.5-flash',
+        model: 'moonshotai/kimi-k2.5',
         messages: messagesWithSystem,
+        max_tokens: 16384,
         temperature: 1.0,
-        stream: false,
+        top_p: 1.0,
+        stream: stream,
+        chat_template_kwargs: { thinking: true },
       }),
     });
 
@@ -55,11 +54,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Parse the response
+    if (stream) {
+      return new Response(response.body, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    }
+
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '';
 
-    // Return regular JSON response
     return new Response(JSON.stringify({ content }), {
       headers: {
         'Content-Type': 'application/json',
@@ -73,7 +80,3 @@ export async function POST(request: NextRequest) {
     });
   }
 }
-
-
-
-
