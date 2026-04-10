@@ -89,7 +89,7 @@ export default function Home() {
       const message =
         error instanceof AuthApiError
           ? error.message
-          : 'Something went wrong while contacting the server.';
+          : 'Could not reach the server. Make sure the backend is running and accessible from http://127.0.0.1:8000.';
       setErrorMessage(message);
     } finally {
       setIsSubmitting(false);

@@ -5,7 +5,6 @@ import { Bot, MessageSquare, Minimize2, SendHorizonal, Sparkles, X } from 'lucid
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 type WidgetMessage = {
   id: string;
@@ -102,10 +101,10 @@ export function FloatingChatbot() {
   };
 
   return (
-    <div className="pointer-events-none fixed right-4 bottom-4 z-50 sm:right-6 sm:bottom-6">
+    <div className="pointer-events-none fixed bottom-4 right-4 z-50 sm:bottom-6 sm:right-6">
       {isOpen ? (
-        <Card className="pointer-events-auto flex h-[min(70vh,38rem)] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden border-white/10 bg-slate-950/95 text-white shadow-2xl shadow-cyan-950/30 backdrop-blur-xl">
-          <CardHeader className="border-b border-white/10 px-4 py-4">
+        <Card className="pointer-events-auto flex h-[480px] w-[340px] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden rounded-2xl border border-white/10 bg-[#0B1120]/95 py-0 text-white shadow-2xl shadow-black/40 backdrop-blur-xl">
+          <CardHeader className="shrink-0 border-b border-white/10 px-4 py-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 text-slate-950">
@@ -142,8 +141,8 @@ export function FloatingChatbot() {
             </div>
           </CardHeader>
 
-          <CardContent className="flex min-h-0 flex-1 flex-col gap-4 p-0">
-            <ScrollArea className="flex-1 px-4 py-4">
+          <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
               <div className="space-y-3">
                 {messages.map((message) => (
                   <div
@@ -177,7 +176,7 @@ export function FloatingChatbot() {
                         key={prompt}
                         type="button"
                         onClick={() => void sendMessage(prompt)}
-                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+                        className="max-w-full whitespace-normal break-words rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-left text-xs leading-5 text-slate-300 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
                       >
                         {prompt}
                       </button>
@@ -193,9 +192,9 @@ export function FloatingChatbot() {
 
                 <div ref={bottomRef} />
               </div>
-            </ScrollArea>
+            </div>
 
-            <form onSubmit={handleSubmit} className="border-t border-white/10 p-4">
+            <form onSubmit={handleSubmit} className="shrink-0 border-t border-white/10 bg-[#0B1120] p-4">
               <div className="flex gap-2">
                 <Input
                   value={input}
