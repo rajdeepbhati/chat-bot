@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { Bot, MessageSquare, Minimize2, SendHorizonal, Sparkles, X } from 'lucide-react';
+import { Bot, MessageSquare, Minimize2, SendHorizonal, Sparkles, X, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -32,6 +32,7 @@ function generateId() {
 
 export function FloatingChatbot() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const [messages, setMessages] = useState<WidgetMessage[]>(STARTER_MESSAGES);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -103,7 +104,7 @@ export function FloatingChatbot() {
   return (
     <div className="pointer-events-none fixed bottom-4 right-4 z-50 sm:bottom-6 sm:right-6">
       {isOpen ? (
-        <Card className="pointer-events-auto flex h-[480px] w-[340px] max-w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden rounded-2xl border border-white/10 bg-[#0B1120]/95 py-0 text-white shadow-2xl shadow-black/40 backdrop-blur-xl">
+        <Card className={`pointer-events-auto flex flex-col gap-0 overflow-hidden rounded-2xl border border-white/10 bg-[#0B1120]/95 py-0 text-white shadow-2xl shadow-black/40 backdrop-blur-xl transition-all duration-300 ${isMaximized ? 'fixed inset-4 z-[60] h-auto w-auto' : 'h-[480px] w-[340px] max-w-[calc(100vw-2rem)]'}`}>
           <CardHeader className="shrink-0 border-b border-white/10 px-4 py-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -119,10 +120,10 @@ export function FloatingChatbot() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => setIsMaximized(!isMaximized)}
                   className="h-8 w-8 text-slate-300 hover:bg-white/10 hover:text-white"
                 >
-                  <Minimize2 className="h-4 w-4" />
+                  {isMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                 </Button>
                 <Button
                   variant="ghost"
@@ -132,6 +133,7 @@ export function FloatingChatbot() {
                     setInput('');
                     setError(null);
                     setIsOpen(false);
+                    setIsMaximized(false);
                   }}
                   className="h-8 w-8 text-slate-300 hover:bg-white/10 hover:text-white"
                 >
@@ -215,7 +217,10 @@ export function FloatingChatbot() {
         </Card>
       ) : (
         <Button
-          onClick={() => setIsOpen(true)}
+          onClick={() => {
+            setIsOpen(true);
+            setIsMaximized(false);
+          }}
           className="pointer-events-auto h-14 rounded-full bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 px-5 text-slate-950 shadow-xl shadow-cyan-900/30 hover:from-cyan-300 hover:via-sky-300 hover:to-blue-400"
         >
           <Sparkles className="mr-2 h-4 w-4" />

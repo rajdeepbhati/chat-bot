@@ -230,16 +230,7 @@ export default function Home() {
                 </Button>
               </form>
 
-              <div className="mt-6 rounded-xl border border-white/10 bg-slate-950/30 p-4 text-sm text-slate-300">
-                <div className="font-medium text-white">Backend connection</div>
-                <p className="mt-1 leading-6">
-                  This page calls the FastAPI JWT endpoint at{' '}
-                  <span className="font-mono text-cyan-200">
-                    {process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000'}
-                  </span>
-                  .
-                </p>
-              </div>
+
             </CardContent>
           </Card>
         </section>
