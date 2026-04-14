@@ -4,37 +4,23 @@ import { useState, useCallback } from 'react';
 import { ChatHistory } from '@/components/chat/ChatHistory';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { Button } from '@/components/ui/button';
-import { Trash2, Download, Sparkles, GitBranch, Calculator, Code, Lightbulb } from 'lucide-react';
+import { Trash2, Download, Sparkles, BellRing, MessageSquareQuote } from 'lucide-react';
 import type { Message } from '@/lib/types';
 
 const EXAMPLE_PROMPTS = [
   {
-    id: 'mermaid',
-    icon: GitBranch,
-    title: 'Generate a Flowchart',
-    prompt: 'Create a Mermaid flowchart showing the software development lifecycle with phases: Requirements, Design, Development, Testing, Deployment, and Maintenance. Show the flow between these phases.',
-    gradient: 'from-purple-500 to-pink-500',
+    id: 'review',
+    icon: BellRing,
+    title: 'Mid-Sem Review',
+    prompt: 'Mid-Semester Review',
+    gradient: 'from-cyan-500 to-blue-500',
   },
   {
-    id: 'math',
-    icon: Calculator,
-    title: 'Math Formulas',
-    prompt: 'Explain and show the quadratic formula, the Pythagorean theorem, and Euler\'s identity using LaTeX math notation. Include both inline and block math examples.',
-    gradient: 'from-blue-500 to-cyan-500',
-  },
-  {
-    id: 'code',
-    icon: Code,
-    title: 'Code Example',
-    prompt: 'Write a Python function that implements the quicksort algorithm with detailed comments explaining each step. Include a usage example.',
+    id: 'lab',
+    icon: MessageSquareQuote,
+    title: 'Lab Schedule',
+    prompt: 'Database Lab Schedule',
     gradient: 'from-emerald-500 to-teal-500',
-  },
-  {
-    id: 'knowledge',
-    icon: Lightbulb,
-    title: 'Fun Facts',
-    prompt: 'Tell me 5 mind-blowing facts about the universe that most people don\'t know. Make each fact interesting and educational.',
-    gradient: 'from-orange-500 to-amber-500',
   },
 ];
 
@@ -193,7 +179,7 @@ export default function ChatPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-blue-600">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
-            <h1 className="text-lg font-semibold text-white">AI Chat</h1>
+            <h1 className="text-lg font-semibold text-white">Campus AI Assistant</h1>
           </div>
 
           <div className="flex items-center gap-1">
@@ -230,9 +216,9 @@ export default function ChatPage() {
               <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-blue-600">
                 <Sparkles className="h-8 w-8 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-white">Welcome to AI Chat</h2>
+              <h2 className="text-2xl font-bold text-white">Campus AI Assistant</h2>
               <p className="text-zinc-400">
-                Ask anything or try one of these examples to see what I can do!
+                Ask a saved announcement question or try one of these examples.
               </p>
             </div>
 
@@ -253,9 +239,7 @@ export default function ChatPage() {
                       <h3 className="font-semibold text-white transition-colors group-hover:text-emerald-400">
                         {example.title}
                       </h3>
-                      <p className="mt-0.5 line-clamp-2 text-sm text-zinc-400">
-                        {example.prompt.slice(0, 60)}...
-                      </p>
+                      <p className="mt-0.5 line-clamp-2 text-sm text-zinc-400">{example.prompt}</p>
                     </div>
                   </button>
                 );
@@ -264,7 +248,7 @@ export default function ChatPage() {
 
             <div className="pt-4 text-center">
               <p className="text-xs text-zinc-500">
-                Supports Markdown, LaTeX math, code highlighting and Mermaid diagrams
+                Replies come only from saved Manage Announcements entries.
               </p>
             </div>
           </div>
@@ -283,7 +267,7 @@ export default function ChatPage() {
             onSend={sendMessage}
             onStop={handleStop}
             isLoading={isLoading}
-            placeholder="Send a message..."
+            placeholder="Ask a saved announcement question..."
           />
         </div>
       </div>

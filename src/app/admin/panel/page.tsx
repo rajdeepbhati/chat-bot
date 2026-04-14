@@ -292,7 +292,7 @@ export default function AdminPanelPage() {
               Admin panel
             </div>
             <h1 className="mt-4 text-3xl font-semibold">Welcome, {panel.admin_name}</h1>
-            <p className="mt-2 text-slate-300">Manage student records, faculty accounts, and campus announcements.</p>
+            <p className="mt-2 text-slate-300">Manage student records, faculty accounts, and assistant question-answer entries.</p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Button
@@ -302,9 +302,6 @@ export default function AdminPanelPage() {
             >
               <RefreshCw className="h-4 w-4" />
               Refresh
-            </Button>
-            <Button onClick={() => router.push('/chat')} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
-              Open AI Assistant
             </Button>
           </div>
         </header>
@@ -447,17 +444,17 @@ export default function AdminPanelPage() {
             <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
               <Card className="border-white/10 bg-white/[0.05] py-0 text-white">
                 <CardHeader className="px-6 py-6">
-                  <div className="flex items-center gap-2 text-cyan-200"><BellRing className="h-4 w-4" /><span className="text-sm font-medium">{editingAnnouncementId ? 'Edit announcement' : 'New announcement'}</span></div>
-                  <CardTitle className="text-2xl">Announcement form</CardTitle>
+                  <div className="flex items-center gap-2 text-cyan-200"><BellRing className="h-4 w-4" /><span className="text-sm font-medium">{editingAnnouncementId ? 'Edit reply' : 'New reply'}</span></div>
+                  <CardTitle className="text-2xl">Question-answer form</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 px-6 pb-6">
-                  <div className="space-y-2"><Label>Title</Label><Input value={announcementForm.title} onChange={(e) => setAnnouncementForm({ ...announcementForm, title: e.target.value })} className="border-white/10 bg-slate-950/40 text-white" /></div>
+                  <div className="space-y-2"><Label>Question</Label><Input value={announcementForm.title} onChange={(e) => setAnnouncementForm({ ...announcementForm, title: e.target.value })} className="border-white/10 bg-slate-950/40 text-white" /></div>
                   <div className="space-y-2"><Label>Audience</Label><Select value={announcementForm.audience} onValueChange={(value) => setAnnouncementForm({ ...announcementForm, audience: value })}><SelectTrigger className="w-full border-white/10 bg-slate-950/40 text-white"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="All">All</SelectItem><SelectItem value="Students">Students</SelectItem><SelectItem value="Faculty">Faculty</SelectItem></SelectContent></Select></div>
-                  <div className="space-y-2"><Label>Message</Label><Textarea value={announcementForm.message} onChange={(e) => setAnnouncementForm({ ...announcementForm, message: e.target.value })} className="min-h-28 border-white/10 bg-slate-950/40 text-white" /></div>
+                  <div className="space-y-2"><Label>Answer</Label><Textarea value={announcementForm.message} onChange={(e) => setAnnouncementForm({ ...announcementForm, message: e.target.value })} className="min-h-28 border-white/10 bg-slate-950/40 text-white" /></div>
                   <div className="flex gap-3">
                     <Button onClick={() => void submitAnnouncementAction()} disabled={busyKey === 'announcement'} className="bg-cyan-400 text-slate-950 hover:bg-cyan-300">
                       {busyKey === 'announcement' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                      {editingAnnouncementId ? 'Update announcement' : 'Publish announcement'}
+                      {editingAnnouncementId ? 'Update reply' : 'Save reply'}
                     </Button>
                     {editingAnnouncementId ? <Button variant="outline" onClick={() => { setEditingAnnouncementId(null); setAnnouncementForm(emptyAnnouncement); }} className="border-white/10 bg-white/5 text-white hover:bg-white/10 hover:text-white">Cancel</Button> : null}
                   </div>
@@ -473,9 +470,11 @@ export default function AdminPanelPage() {
                     <div key={announcement.id} className="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <div className="text-lg font-semibold text-white">{announcement.title}</div>
-                          <div className="mt-1 text-sm text-slate-400">{announcement.audience} • {formatDate(announcement.created_at)}</div>
-                          <p className="mt-3 text-sm leading-6 text-slate-300">{announcement.message}</p>
+                          <div className="text-xs uppercase tracking-[0.2em] text-cyan-200">Question</div>
+                          <div className="mt-1 text-lg font-semibold text-white">{announcement.title}</div>
+                          <div className="mt-1 text-sm text-slate-400">{announcement.audience} | {formatDate(announcement.created_at)}</div>
+                          <div className="mt-3 text-xs uppercase tracking-[0.2em] text-cyan-200">Answer</div>
+                          <p className="mt-1 text-sm leading-6 text-slate-300">{announcement.message}</p>
                         </div>
                         <div className="flex gap-2">
                           <Button size="sm" variant="outline" onClick={() => { setEditingAnnouncementId(announcement.id); setAnnouncementForm({ title: announcement.title, message: announcement.message, audience: announcement.audience }); }} className="border-white/10 bg-white/5 text-white hover:bg-white/10 hover:text-white"><Pencil className="h-4 w-4" /></Button>

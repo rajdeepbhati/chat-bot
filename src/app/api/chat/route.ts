@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 
-const API_KEY = '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';
-const INVOKE_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') ?? 'http://127.0.0.1:8000';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -10,7 +10,7 @@ interface ChatMessage {
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, stream = false } = await request.json() as { messages: ChatMessage[]; stream?: boolean };
+    const { messages } = await request.json() as { messages: ChatMessage[] };
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: 'Messages array is required' }), {
@@ -19,55 +19,33 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const messagesWithSystem: ChatMessage[] = [
-      {
-        role: 'system',
-        content: 'You are a helpful AI assistant.',
-      },
-      ...messages,
-    ];
+    const latestUserMessage = [...messages].reverse().find((message) => message.role === 'user')?.content?.trim();
+    if (!latestUserMessage) {
+      return new Response(JSON.stringify({ error: 'A user message is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
-    const response = await fetch(INVOKE_URL, {
+    const response = await fetch(`${API_BASE_URL}/chatbot/ask`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${API_KEY}`,
         'Content-Type': 'application/json',
-        'Accept': stream ? 'text/event-stream' : 'application/json',
       },
-      body: JSON.stringify({
-        model: 'moonshotai/kimi-k2.5',
-        messages: messagesWithSystem,
-        max_tokens: 16384,
-        temperature: 1.0,
-        top_p: 1.0,
-        stream: stream,
-        chat_template_kwargs: { thinking: true },
-      }),
+      body: JSON.stringify({ question: latestUserMessage }),
+      cache: 'no-store',
     });
 
+    const data = (await response.json().catch(() => null)) as { answer?: string; detail?: string } | null;
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API Error:', errorText);
-      return new Response(JSON.stringify({ error: `API Error: ${response.status}` }), {
+      return new Response(JSON.stringify({ error: data?.detail || `API Error: ${response.status}` }), {
         status: response.status,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    if (stream) {
-      return new Response(response.body, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-        },
-      });
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '';
-
-    return new Response(JSON.stringify({ content }), {
+    return new Response(JSON.stringify({ content: data?.answer || 'Reply not found' }), {
       headers: {
         'Content-Type': 'application/json',
       },

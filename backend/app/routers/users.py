@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user, require_roles
 from app.models import User, UserRole
+from app.state.admin_store import ANNOUNCEMENTS
 from app.services.announcement_ingest import ingest_admin_announcement
 from app.services.at_risk import build_at_risk_report
 from app.services.event_intake import analyze_event_text, store_event_if_ready
@@ -181,24 +182,6 @@ ADMIN_FACULTY = [
         "designation": "Associate Professor",
     },
 ]
-
-ANNOUNCEMENTS = [
-    {
-        "id": 1,
-        "title": "Mid-Semester Review",
-        "message": "Academic review meeting will be held on Friday at 11 AM.",
-        "audience": "All",
-        "created_at": "2026-04-06",
-    },
-    {
-        "id": 2,
-        "title": "Database Lab Schedule",
-        "message": "Lab timings for Database Systems have been updated in the portal.",
-        "audience": "Students",
-        "created_at": "2026-04-07",
-    },
-]
-
 
 def _next_id(items: list[dict]) -> int:
     return max((item["id"] for item in items), default=0) + 1

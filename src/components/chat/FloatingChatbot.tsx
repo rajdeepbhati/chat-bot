@@ -16,14 +16,13 @@ const STARTER_MESSAGES: WidgetMessage[] = [
   {
     id: 'welcome',
     role: 'assistant',
-    content: 'Hi! I am your campus assistant. Ask me anything about schedules, academics, or announcements.',
+    content: 'Ask a saved announcement question.',
   },
 ];
 
 const QUICK_PROMPTS = [
-  'Is college open tomorrow?',
-  'Show me today’s classes',
-  'Explain database normalization',
+  'Mid-Semester Review',
+  'Database Lab Schedule',
 ];
 
 function generateId() {
@@ -113,7 +112,7 @@ export function FloatingChatbot() {
                 </div>
                 <div>
                   <CardTitle className="text-base">Campus AI Assistant</CardTitle>
-                  <div className="text-xs text-slate-400">Always here in the corner</div>
+                  <div className="text-xs text-slate-400">Replies from saved announcements only</div>
                 </div>
               </div>
               <div className="flex items-center gap-1">
@@ -201,7 +200,7 @@ export function FloatingChatbot() {
                 <Input
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
-                  placeholder="Ask the assistant..."
+                  placeholder="Ask a saved question..."
                   className="h-11 border-white/10 bg-slate-900/80 text-white placeholder:text-slate-500"
                 />
                 <Button
