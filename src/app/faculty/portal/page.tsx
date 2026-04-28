@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   BookOpenCheck,
   CircleAlert,
@@ -60,7 +59,6 @@ function statusVariant(status: string): 'default' | 'secondary' | 'outline' {
 const todayString = new Date().toISOString().slice(0, 10);
 
 export default function FacultyPortalPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [portal, setPortal] = useState<FacultyPortalData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -239,12 +237,6 @@ export default function FacultyPortalPage() {
             >
               <RefreshCw className="h-4 w-4" />
               Refresh
-            </Button>
-            <Button
-              onClick={() => router.push('/chat')}
-              className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
-            >
-              Open AI Assistant
             </Button>
           </div>
         </header>

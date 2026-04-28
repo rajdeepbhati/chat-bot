@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   AlarmClock,
   BookCopy,
@@ -124,7 +123,6 @@ function MarkRow({ item }: { item: MarkItem }) {
 }
 
 export default function StudentDashboardPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [dashboard, setDashboard] = useState<StudentDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -221,12 +219,6 @@ export default function StudentDashboardPage() {
             >
               <RefreshCw className="h-4 w-4" />
               Refresh
-            </Button>
-            <Button
-              onClick={() => router.push('/chat')}
-              className="bg-cyan-400 text-slate-950 hover:bg-cyan-300"
-            >
-              Open AI Assistant
             </Button>
           </div>
         </header>

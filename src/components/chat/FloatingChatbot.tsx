@@ -1,10 +1,11 @@
 'use client';
 
-import { FormEvent, useEffect, useRef, useState } from 'react';
-import { Bot, MessageSquare, Minimize2, SendHorizonal, Sparkles, X, Maximize2 } from 'lucide-react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { Bot, Maximize2, MessageSquare, Mic, Minimize2, SendHorizonal, Sparkles, Square, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useSpeechToText } from '@/hooks/useSpeechToText';
 
 type WidgetMessage = {
   id: string;
@@ -34,15 +35,42 @@ export function FloatingChatbot() {
   const [isMaximized, setIsMaximized] = useState(false);
   const [messages, setMessages] = useState<WidgetMessage[]>(STARTER_MESSAGES);
   const [input, setInput] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('en-US');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const voiceDraftBaseRef = useRef('');
+  const {
+    error: speechError,
+    finalTranscript,
+    interimTranscript,
+    isListening,
+    isSupported,
+    startListening,
+    stopListening,
+  } = useSpeechToText({ language: selectedLanguage });
+
+  const languageOptions = [
+    { value: 'en-US', label: 'EN' },
+    { value: 'hi-IN', label: 'HI' },
+    { value: 'es-ES', label: 'ES' },
+  ];
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
 
-  const sendMessage = async (content: string) => {
+  useEffect(() => {
+    if (!isListening && !finalTranscript && !interimTranscript) {
+      return;
+    }
+
+    const voiceText = [finalTranscript, interimTranscript].filter(Boolean).join(' ').trim();
+    const nextValue = [voiceDraftBaseRef.current, voiceText].filter(Boolean).join(' ').trim();
+    setInput(nextValue);
+  }, [finalTranscript, interimTranscript, isListening]);
+
+  const sendMessage = useCallback(async (content: string) => {
     const trimmed = content.trim();
     if (!trimmed || isLoading) {
       return;
@@ -57,6 +85,7 @@ export function FloatingChatbot() {
     const nextMessages = [...messages, userMessage];
     setMessages(nextMessages);
     setInput('');
+    voiceDraftBaseRef.current = '';
     setError(null);
     setIsLoading(true);
 
@@ -93,11 +122,30 @@ export function FloatingChatbot() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading, messages]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     await sendMessage(input);
+  };
+
+  const handleStartListening = async () => {
+    if (isListening || isLoading) {
+      return;
+    }
+
+    voiceDraftBaseRef.current = input.trim();
+    await startListening();
+  };
+
+  const handleStopListening = () => {
+    const voiceText = [finalTranscript, interimTranscript].filter(Boolean).join(' ').trim();
+    const nextValue = [voiceDraftBaseRef.current, voiceText].filter(Boolean).join(' ').trim();
+    stopListening();
+
+    if (nextValue && !speechError && !isLoading) {
+      void sendMessage(nextValue);
+    }
   };
 
   return (
@@ -128,8 +176,10 @@ export function FloatingChatbot() {
                   variant="ghost"
                   size="icon"
                   onClick={() => {
+                    stopListening();
                     setMessages(STARTER_MESSAGES);
                     setInput('');
+                    voiceDraftBaseRef.current = '';
                     setError(null);
                     setIsOpen(false);
                     setIsMaximized(false);
@@ -199,10 +249,52 @@ export function FloatingChatbot() {
               <div className="flex gap-2">
                 <Input
                   value={input}
-                  onChange={(event) => setInput(event.target.value)}
+                  onChange={(event) => {
+                    setInput(event.target.value);
+                    if (!isListening) {
+                      voiceDraftBaseRef.current = event.target.value.trim();
+                    }
+                  }}
                   placeholder="Ask a saved question..."
                   className="h-11 border-white/10 bg-slate-900/80 text-white placeholder:text-slate-500"
                 />
+                <select
+                  value={selectedLanguage}
+                  onChange={(event) => setSelectedLanguage(event.target.value)}
+                  disabled={isLoading || isListening}
+                  className="h-11 rounded-xl border border-white/10 bg-slate-900/80 px-2 text-xs text-slate-200 outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Speech recognition language"
+                >
+                  {languageOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                {isListening ? (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    onClick={handleStopListening}
+                    className="h-11 w-11 rounded-xl"
+                    aria-label="Stop voice recording"
+                  >
+                    <Square className="h-4 w-4 fill-current" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    onClick={handleStartListening}
+                    disabled={isLoading || !isSupported}
+                    className="h-11 w-11 rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10 disabled:opacity-50"
+                    aria-label="Start voice recording"
+                  >
+                    <Mic className={`h-4 w-4 ${isListening ? 'animate-pulse text-rose-300' : ''}`} />
+                  </Button>
+                )}
                 <Button
                   type="submit"
                   disabled={isLoading || !input.trim()}
@@ -211,6 +303,25 @@ export function FloatingChatbot() {
                   <SendHorizonal className="h-4 w-4" />
                 </Button>
               </div>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="text-slate-500">
+                  {isListening ? 'Listening...' : 'Voice typing available'}
+                </span>
+                {isListening ? (
+                  <span className="flex items-center gap-2 text-rose-300">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-rose-300" />
+                    Mic active
+                  </span>
+                ) : null}
+              </div>
+              {!isSupported ? (
+                <p className="mt-2 text-xs text-amber-300">
+                  Voice input is not supported in this browser. Try Chrome or Edge.
+                </p>
+              ) : null}
+              {speechError ? (
+                <p className="mt-2 text-xs text-rose-300">{speechError}</p>
+              ) : null}
             </form>
           </CardContent>
         </Card>
